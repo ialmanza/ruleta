@@ -57,17 +57,17 @@
 }
 
 h2 {
-  text-align: center; /* Centra el texto */
-  font-size: 2rem; /* Tamaño de fuente */
-  font-weight: bold; /* Negrita */
-  color: #ffffff; /* Color del texto */
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4); /* Sombra para mayor legibilidad */
-  background: linear-gradient(90deg, #ff7eb3, #ff758c); /* Degradado de colores */
-  padding: 10px 20px; /* Espaciado interno */
-  border-radius: 8px; /* Bordes redondeados */
-  margin-bottom: 10px; /* Espacio inferior */
-  display: inline-block; /* Ajuste del ancho al contenido */
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Sombra del contenedor */
+  text-align: center;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(90deg, #ff7eb3, #ff758c);
+  padding: 10px 20px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: inline-block;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 

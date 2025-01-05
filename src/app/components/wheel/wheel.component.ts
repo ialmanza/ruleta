@@ -17,6 +17,7 @@ export class WheelComponent implements OnInit {
     playerForm: FormGroup;
     spinForm: FormGroup;
     players: Player[] = [];
+    playersWhoSpun: string[] = [];
     results: DrawResult[] = [];
     isSpinning = false;
     error: string | null = null;
@@ -42,7 +43,20 @@ export class WheelComponent implements OnInit {
             this.players = players;
             this.wheelSegments = this.wheelService.calculateWheelSegments(players);
         });
+
+        this.wheelService.getPlayersWhoSpun().subscribe(players => {
+          this.playersWhoSpun = players;
+      });
+
         this.loadResults();
+    }
+
+    hasPlayerSpun(playerName: string): boolean {
+      return this.playersWhoSpun.includes(playerName);
+    }
+
+    getAvailablePlayers(): Player[] {
+      return this.players.filter(player => !this.hasPlayerSpun(player.name));
     }
 
     async loadResults(): Promise<void> {

@@ -16,7 +16,7 @@
                        'transform': 'rotate(' + segment.angle + 'deg)',
                        'background-color': segment.color
                    }">
-                  {{ segment.name }}
+                  <!-- {{ segment.name }} -->
               </div>
           </div>
           <div class="wheel-pointer"></div>
@@ -60,27 +60,35 @@
 
       <!-- Formulario para girar la ruleta -->
       <form [formGroup]="spinForm" (ngSubmit)="spinWheel()" class="spin-form">
-          <div class="form-group">
-              <label for="currentPlayer">¿Quién gira la ruleta?</label>
-              <select
-                  id="currentPlayer"
-                  formControlName="currentPlayer"
-                  [class.error]="spinForm.get('currentPlayer')?.invalid && spinForm.get('currentPlayer')?.touched"
-              >
-                  <option value="">Selecciona un jugador</option>
-                  <option *ngFor="let player of players" [value]="player.name">
-                      {{ player.name }}
-                  </option>
-              </select>
-              <button
-                  type="submit"
-                  [disabled]="spinForm.invalid || isSpinning"
-                  class="btn-spin"
-              >
-                  {{ isSpinning ? 'Girando...' : 'Girar Ruleta' }}
-              </button>
-          </div>
-      </form>
+        <div class="form-group">
+            <label for="currentPlayer">¿Quién gira la ruleta?</label>
+            <select
+                id="currentPlayer"
+                formControlName="currentPlayer"
+                [class.error]="spinForm.get('currentPlayer')?.invalid && spinForm.get('currentPlayer')?.touched"
+            >
+                <option value="">Selecciona un jugador</option>
+                <option
+                    *ngFor="let player of getAvailablePlayers()"
+                    [value]="player.name"
+                    [disabled]="hasPlayerSpun(player.name)"
+                >
+                    {{ player.name }} {{ hasPlayerSpun(player.name) ? '(Ya giró)' : '' }}
+                </option>
+            </select>
+            <button
+                type="submit"
+                [disabled]="
+                    spinForm.invalid ||
+                    isSpinning ||
+                    hasPlayerSpun(spinForm.get('currentPlayer')?.value)
+                "
+                class="btn-spin"
+            >
+                {{ isSpinning ? 'Girando...' : 'Girar Ruleta' }}
+            </button>
+        </div>
+    </form>
 
       <!-- Mensajes de error y éxito -->
       <div *ngIf="error" class="alert alert-error">

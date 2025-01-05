@@ -1,128 +1,3 @@
-// // src/app/services/wheel.service.ts
-// import { Injectable } from '@angular/core';
-// import { createClient, SupabaseClient } from '@supabase/supabase-js';
-// import { BehaviorSubject, Observable } from 'rxjs';
-// import { DrawResult } from '../../models/Idrawresult';
-// import { Player } from '../../models/Iplayer';
-// import { environment } from '../../../environments/environments';
-
-// @Injectable({
-//     providedIn: 'root'
-// })
-// export class WheelService {
-//     private supabase: SupabaseClient;
-//     private players = new BehaviorSubject<Player[]>([]);
-//     private readonly PLAYERS_KEY = 'wheelPlayers';
-
-//     constructor() {
-//         this.supabase = createClient(
-//             environment.supabaseUrl,
-//             environment.supabaseKey
-//         );
-//         this.loadPlayersFromStorage();
-//     }
-
-//     private loadPlayersFromStorage(): void {
-//         const storedPlayers = localStorage.getItem(this.PLAYERS_KEY);
-//         if (storedPlayers) {
-//             this.players.next(JSON.parse(storedPlayers));
-//         }
-//     }
-
-//     private savePlayersToStorage(players: Player[]): void {
-//         localStorage.setItem(this.PLAYERS_KEY, JSON.stringify(players));
-//         this.players.next(players);
-//     }
-
-//     getPlayers(): Observable<Player[]> {
-//         return this.players.asObservable();
-//     }
-
-//     addPlayer(name: string): void {
-//         const currentPlayers = this.players.value;
-//         if (currentPlayers.length >= 35) {
-//             throw new Error('Máximo número de jugadores alcanzado');
-//         }
-
-//         if (currentPlayers.some(player => player.name.toLowerCase() === name.toLowerCase())) {
-//             throw new Error('El jugador ya existe');
-//         }
-
-//         const newPlayer: Player = {
-//             name,
-//             isSelected: false
-//         };
-
-//         this.savePlayersToStorage([...currentPlayers, newPlayer]);
-//     }
-
-//     async spinWheel(currentPlayerName: string): Promise<DrawResult> {
-//       const currentPlayers = this.players.value;
-//       const availablePlayers = currentPlayers.filter(
-//           player => !player.isSelected && player.name !== currentPlayerName
-//       );
-
-//       if (availablePlayers.length === 0) {
-//           throw new Error('No hay jugadores disponibles');
-//       }
-
-//       const randomIndex = Math.floor(Math.random() * availablePlayers.length);
-//       const selectedPlayer = availablePlayers[randomIndex];
-
-//       // Marcar jugador como seleccionado
-//       const updatedPlayers = currentPlayers.map(player =>
-//           player.name === selectedPlayer.name
-//               ? { ...player, isSelected: true }
-//               : player
-//       );
-
-//       this.savePlayersToStorage(updatedPlayers);
-
-//       // Guardar resultado en Supabase usando snake_case
-//       const drawResult = {
-//           player_who_spun: currentPlayerName,
-//           selected_player: selectedPlayer.name,
-//           timestamp: new Date()
-//       };
-
-//       const { data, error } = await this.supabase
-//           .from('draw_results')
-//           .insert([drawResult])
-//           .select()
-//           .single();
-
-//       if (error) throw error;
-
-//       // Convertir la respuesta a camelCase para la interfaz
-//       return {
-//           playerWhoSpun: data.player_who_spun,
-//           selectedPlayer: data.selected_player,
-//           timestamp: new Date(data.timestamp)
-//       };
-//   }
-
-//   async getResults(): Promise<DrawResult[]> {
-//     const { data, error } = await this.supabase
-//         .from('draw_results')
-//         .select('*')
-//         .order('timestamp', { ascending: false });
-
-//     if (error) throw error;
-
-//     // Convertir la respuesta a camelCase para la interfaz
-//     return data.map(item => ({
-//         playerWhoSpun: item.player_who_spun,
-//         selectedPlayer: item.selected_player,
-//         timestamp: new Date(item.timestamp)
-//     }));
-// }
-
-//     resetGame(): void {
-//         this.savePlayersToStorage([]);
-//     }
-// }
-
-
 // src/app/services/wheel.service.ts
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
@@ -137,6 +12,7 @@ import { Player } from '../../../models/Iplayer';
 export class WheelService {
     private supabase: SupabaseClient;
     private players = new BehaviorSubject<Player[]>([]);
+    private playersWhoSpun = new BehaviorSubject<string[]>([]);
 
     constructor() {
         this.supabase = createClient(
@@ -147,21 +23,41 @@ export class WheelService {
     }
 
     private async loadPlayers(): Promise<void> {
-        const { data, error } = await this.supabase
-            .from('players')
-            .select('*')
-            .eq('is_active', true);
+      const { data, error } = await this.supabase
+          .from('players')
+          .select('*')
+          .eq('is_active', true);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        this.players.next(data.map(player => ({
-            name: player.name,
-            isSelected: false
-        })));
+      this.players.next(data.map(player => ({
+          name: player.name,
+          isSelected: false
+      })));
     }
+
+    private async loadPlayersWhoSpun(): Promise<void> {
+      const { data, error } = await this.supabase
+          .from('draw_results')
+          .select('player_who_spun')
+          .order('timestamp', { ascending: true });
+
+      if (error) throw error;
+
+      const playersWhoSpun = data.map(result => result.player_who_spun);
+      this.playersWhoSpun.next(playersWhoSpun);
+  }
 
     getPlayers(): Observable<Player[]> {
         return this.players.asObservable();
+    }
+
+    getPlayersWhoSpun(): Observable<string[]> {
+        return this.playersWhoSpun.asObservable();
+    }
+
+    hasPlayerSpun(playerName: string): boolean {
+        return this.playersWhoSpun.value.includes(playerName);
     }
 
     async addPlayer(name: string): Promise<void> {
@@ -187,6 +83,11 @@ export class WheelService {
     }
 
     async spinWheel(currentPlayerName: string): Promise<DrawResult> {
+
+        if (this.hasPlayerSpun(currentPlayerName)) {
+          throw new Error('Ya has girado la ruleta en este juego');
+        }
+
         const currentPlayers = this.players.value;
         const availablePlayers = currentPlayers.filter(
             player => !player.isSelected && player.name !== currentPlayerName
@@ -221,6 +122,10 @@ export class WheelService {
             .single();
 
         if (error) throw error;
+
+         // Actualizar la lista de jugadores que han girado
+         const updatedPlayersWhoSpun = [...this.playersWhoSpun.value, currentPlayerName];
+         this.playersWhoSpun.next(updatedPlayersWhoSpun);
 
         return {
             playerWhoSpun: data.player_who_spun,
