@@ -24,7 +24,7 @@ export class SplashComponent {
       window.addEventListener('load', () => {
         setTimeout(() => {
           this.showSplash = false;
-        }, 3000);
+        }, 4000);
       });
     }
   }
