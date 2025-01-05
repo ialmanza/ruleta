@@ -1,0 +1,117 @@
+<div class="wheel-container">
+  <div class="card">
+      <h2>Ruleta Fénix</h2>
+
+      <br><br><br>
+      <!-- Wheel Component -->
+      <div class="wheel-wrapper">
+          <div class="wheel"
+               [ngStyle]="{
+                   'transform': 'rotate(' + wheelRotation + 'deg)',
+                   'transition': getWheelTransitionStyle()
+               }">
+              <div *ngFor="let segment of wheelSegments"
+                   class="wheel-segment"
+                   [ngStyle]="{
+                       'transform': 'rotate(' + segment.angle + 'deg)',
+                       'background-color': segment.color
+                   }">
+                  {{ segment.name }}
+              </div>
+          </div>
+          <div class="wheel-pointer"></div>
+      </div>
+
+      <br><br><br>
+      <!-- Formulario para agregar jugadores -->
+      <!-- <form [formGroup]="playerForm" (ngSubmit)="addPlayer()" class="player-form">
+          <div class="form-group">
+              <label for="name">Agregar Jugador</label>
+              <input
+                  type="text"
+                  id="name"
+                  formControlName="name"
+                  placeholder="Nombre del jugador"
+                  [class.error]="playerForm.get('name')?.invalid && playerForm.get('name')?.touched"
+              >
+              <button
+                  type="submit"
+                  [disabled]="playerForm.invalid || players.length >= 35"
+                  class="btn-primary"
+              >
+                  Agregar
+              </button>
+          </div>
+      </form> -->
+
+      <!-- Lista de jugadores -->
+      <!-- <div class="players-list">
+          <h3>Jugadores ({{ players.length }}/35)</h3>
+          <div class="players-grid">
+              <div
+                  *ngFor="let player of players"
+                  class="player-chip"
+                  [class.selected]="player.isSelected"
+              >
+                  {{ player.name }}
+              </div>
+          </div>
+      </div> -->
+
+      <!-- Formulario para girar la ruleta -->
+      <form [formGroup]="spinForm" (ngSubmit)="spinWheel()" class="spin-form">
+          <div class="form-group">
+              <label for="currentPlayer">¿Quién gira la ruleta?</label>
+              <select
+                  id="currentPlayer"
+                  formControlName="currentPlayer"
+                  [class.error]="spinForm.get('currentPlayer')?.invalid && spinForm.get('currentPlayer')?.touched"
+              >
+                  <option value="">Selecciona un jugador</option>
+                  <option *ngFor="let player of players" [value]="player.name">
+                      {{ player.name }}
+                  </option>
+              </select>
+              <button
+                  type="submit"
+                  [disabled]="spinForm.invalid || isSpinning"
+                  class="btn-spin"
+              >
+                  {{ isSpinning ? 'Girando...' : 'Girar Ruleta' }}
+              </button>
+          </div>
+      </form>
+
+      <!-- Mensajes de error y éxito -->
+      <div *ngIf="error" class="alert alert-error">
+          {{ error }}
+      </div>
+      <div *ngIf="success" class="alert alert-success">
+          {{ success }}
+      </div>
+
+      <!-- Historial de resultados -->
+      <!-- <div class="results-section">
+          <h3>Historial de Resultados</h3>
+          <div class="results-list">
+              <div *ngFor="let result of results" class="result-item">
+                  <span class="result-player">{{ result.playerWhoSpun }}</span>
+                  <span class="result-arrow">→</span>
+                  <span class="result-selected">{{ result.selectedPlayer }}</span>
+                  <span class="result-time">
+                      {{ result.timestamp | date:'short' }}
+                  </span>
+              </div>
+          </div>
+      </div> -->
+
+      <!-- Botón de reinicio -->
+      <button
+          (click)="resetGame()"
+          class="btn-reset"
+          [disabled]="players.length === 0"
+      >
+          Reiniciar Juego
+      </button>
+  </div>
+</div>
