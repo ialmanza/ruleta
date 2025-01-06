@@ -11,23 +11,30 @@
     </div> -->
 
       <!-- Wheel Component -->
-      <div class="wheel-wrapper">
-          <div class="wheel"
-               [ngStyle]="{
-                   'transform': 'rotate(' + wheelRotation + 'deg)',
-                   'transition': getWheelTransitionStyle()
-               }">
-              <div *ngFor="let segment of wheelSegments"
-                   class="wheel-segment"
-                   [ngStyle]="{
-                       'transform': 'rotate(' + segment.angle + 'deg)',
-                       'background-color': segment.color
-                   }">
-                  <!-- {{ segment.name }} -->
-              </div>
-          </div>
-          <div class="wheel-pointer"></div>
-      </div>
+      <div class="wheel-and-image-container">
+        <!-- Contenedor de Imagen -->
+        <div class="image-container" [ngClass]="{'hidden': !isImageVisible}">
+            <img src="ruleta.jpg" alt="Imagen Representativa" class="responsive-image" />
+        </div>
+
+        <!-- Wheel Component -->
+        <div class="wheel-wrapper" [ngClass]="{'visible': isSpinning}">
+            <div class="wheel"
+                 [ngStyle]="{
+                     'transform': 'rotate(' + wheelRotation + 'deg)',
+                     'transition': getWheelTransitionStyle()
+                 }">
+                <div *ngFor="let segment of wheelSegments"
+                     class="wheel-segment"
+                     [ngStyle]="{
+                         'transform': 'rotate(' + segment.angle + 'deg)',
+                         'background-color': segment.color
+                     }">
+                </div>
+            </div>
+            <div class="wheel-pointer"></div>
+        </div>
+    </div>
 
       <br><br><br>
       <!-- Formulario para agregar jugadores -->

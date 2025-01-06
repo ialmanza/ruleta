@@ -17,17 +17,24 @@ export class SplashComponent {
 
   ngOnInit() {
     if (this.platform.isBrowser) {
-      // Iniciar el confeti inmediatamente
+
       this.triggerConfetti();
 
-      // Temporizador para ocultar el splash
+
       window.addEventListener('load', () => {
         setTimeout(() => {
-          this.showSplash = false;
+          const splashElement = document.querySelector('.splash-screen');
+          if (splashElement) {
+            splashElement.classList.add('fade-out');
+          }
+          setTimeout(() => {
+            this.showSplash = false;
+          }, 1000);
         }, 4000);
       });
     }
   }
+
 
   triggerConfetti() {
     const end = Date.now() + 2000; // duración de 1 segundo

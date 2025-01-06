@@ -20,6 +20,7 @@ export class WheelComponent implements OnInit {
     playersWhoSpun: string[] = [];
     results: DrawResult[] = [];
     isSpinning = false;
+    isImageVisible: boolean = false;
     error: string | null = null;
     success: string | null = null;
     wheelRotation = 0;
@@ -56,7 +57,10 @@ export class WheelComponent implements OnInit {
     }
 
     getAvailablePlayers(): Player[] {
-      return this.players.filter(player => !this.hasPlayerSpun(player.name));
+      return this.players.filter(player =>
+        !this.hasPlayerSpun(player.name) &&
+        !player.isSelected // Asegura que no se repita el seleccionado
+    );
     }
 
     async loadResults(): Promise<void> {
@@ -83,6 +87,7 @@ export class WheelComponent implements OnInit {
 
     async spinWheel(): Promise<void> {
         if (this.spinForm.valid && !this.isSpinning) {
+            //this.isImageVisible = false;
             this.isSpinning = true;
             this.error = null;
             this.success = null;
@@ -124,10 +129,17 @@ export class WheelComponent implements OnInit {
                 // Actualizar los segmentos de la rueda con los jugadores actualizados
                 this.wheelSegments = this.wheelService.calculateWheelSegments(this.players);
 
+                setTimeout(() => {
+                  this.isSpinning = false; // Se establece a false después de la animación
+              }, this.SPIN_DURATION + 500); // Añade un pequeño delay extra
+
+
             } catch (error: any) {
                 this.error = error.message;
+                this.isSpinning = false;
             } finally {
                 this.isSpinning = false;
+                this.isImageVisible = true;
             }
         }
     }

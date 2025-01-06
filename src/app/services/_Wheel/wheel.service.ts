@@ -89,8 +89,9 @@ export class WheelService {
         }
 
         const currentPlayers = this.players.value;
-        const availablePlayers = currentPlayers.filter(
-            player => !player.isSelected && player.name !== currentPlayerName
+        const availablePlayers = currentPlayers.filter(player =>
+            !this.hasPlayerSpun(player.name) &&
+            !player.isSelected // Verificar que no haya sido seleccionado antes
         );
 
         if (availablePlayers.length === 0) {
