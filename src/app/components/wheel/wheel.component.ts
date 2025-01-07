@@ -158,8 +158,12 @@ export class WheelComponent implements OnInit {
     }
 
     getWheelTransitionStyle(): string {
-        return this.isSpinning
-            ? `transform ${this.SPIN_DURATION}ms cubic-bezier(0.17, 0.67, 0.12, 0.99)`
-            : 'transform 0.2s ease-out';
+        // return this.isSpinning
+        //     ? `transform ${this.SPIN_DURATION}ms cubic-bezier(0.17, 0.67, 0.12, 0.99)`
+        //     : 'transform 0.2s ease-out';
+        const transition = this.isSpinning
+        ? `${this.SPIN_DURATION}ms cubic-bezier(0.17, 0.67, 0.12, 0.99)`
+        : '0.2s ease-out';
+      return `-webkit-transform ${transition}; transform ${transition}`;
     }
 }
