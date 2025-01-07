@@ -30,7 +30,7 @@ export class SplashComponent {
           setTimeout(() => {
             this.showSplash = false;
           }, 1000);
-        }, 4000);
+        }, 2000);
       });
     }
   }

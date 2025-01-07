@@ -73,6 +73,19 @@
       </div> -->
 
       <!-- Formulario para girar la ruleta -->
+      <!-- <form [formGroup]="spinForm" (ngSubmit)="spinWheel()">
+        <select formControlName="currentPlayer">
+            <option value="">Selecciona un jugador</option>
+            <option *ngFor="let player of getAvailablePlayers()"
+                    [value]="player.name"
+                    [disabled]="playersWhoSpun.includes(player.name)">
+                {{player.name}}
+            </option>
+        </select>
+        <button type="submit" [disabled]="!spinForm.valid || isSpinning">
+            Girar Ruleta
+        </button>
+    </form> -->
       <form [formGroup]="spinForm" (ngSubmit)="spinWheel()" class="spin-form">
         <div class="form-group">
             <label for="currentPlayer">¿Quién gira la ruleta?</label>

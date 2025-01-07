@@ -57,10 +57,9 @@ export class WheelComponent implements OnInit {
     }
 
     getAvailablePlayers(): Player[] {
-      return this.players.filter(player =>
-        !this.hasPlayerSpun(player.name) &&
-        !player.isSelected // Asegura que no se repita el seleccionado
-    );
+          return this.players.filter(player =>
+            !this.playersWhoSpun.includes(player.name)
+        );
     }
 
     async loadResults(): Promise<void> {
@@ -87,7 +86,6 @@ export class WheelComponent implements OnInit {
 
     async spinWheel(): Promise<void> {
         if (this.spinForm.valid && !this.isSpinning) {
-            //this.isImageVisible = false;
             this.isSpinning = true;
             this.error = null;
             this.success = null;
@@ -95,16 +93,13 @@ export class WheelComponent implements OnInit {
             try {
                 const currentPlayer = this.spinForm.get('currentPlayer')?.value;
 
-                // Calcular rotación aleatoria (entre 5 y 10 vueltas completas)
                 const minSpins = 5;
                 const maxSpins = 10;
                 const spins = minSpins + Math.random() * (maxSpins - minSpins);
                 const baseRotation = spins * 360;
 
-                // Obtener el resultado del servicio
                 const result = await this.wheelService.spinWheel(currentPlayer);
 
-                // Encontrar el segmento del jugador seleccionado
                 const selectedSegment = this.wheelSegments.find(
                     segment => segment.name === result.selectedPlayer
                 );
@@ -113,26 +108,29 @@ export class WheelComponent implements OnInit {
                     throw new Error('Error al encontrar el jugador seleccionado');
                 }
 
-                // Calcular la rotación final para que apunte al jugador seleccionado
                 const finalRotation = baseRotation + (360 - selectedSegment.angle);
 
                 // Aplicar la animación
                 this.wheelRotation = finalRotation;
 
-                // Esperar a que termine la animación antes de mostrar el resultado
                 await new Promise(resolve => setTimeout(resolve, this.SPIN_DURATION));
 
                 this.results = [result, ...this.results];
                 this.success = `¡${result.selectedPlayer} ha sido seleccionado!`;
+
+                this.players.forEach((player) => {
+                  if (player.name === result.selectedPlayer) {
+                    player.isSelected = true;
+                  }
+                });
+
                 this.spinForm.reset();
 
-                // Actualizar los segmentos de la rueda con los jugadores actualizados
                 this.wheelSegments = this.wheelService.calculateWheelSegments(this.players);
 
                 setTimeout(() => {
-                  this.isSpinning = false; // Se establece a false después de la animación
-              }, this.SPIN_DURATION + 500); // Añade un pequeño delay extra
-
+                  this.isSpinning = false;
+              }, this.SPIN_DURATION + 500); // Añade delay extra
 
             } catch (error: any) {
                 this.error = error.message;
@@ -159,7 +157,6 @@ export class WheelComponent implements OnInit {
         }
     }
 
-    // Método para obtener el estilo de transición basado en si está girando
     getWheelTransitionStyle(): string {
         return this.isSpinning
             ? `transform ${this.SPIN_DURATION}ms cubic-bezier(0.17, 0.67, 0.12, 0.99)`

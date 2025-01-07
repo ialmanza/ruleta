@@ -1,4 +1,3 @@
-// src/app/services/wheel.service.ts
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { BehaviorSubject, Observable, from } from 'rxjs';
@@ -13,6 +12,8 @@ export class WheelService {
     private supabase: SupabaseClient;
     private players = new BehaviorSubject<Player[]>([]);
     private playersWhoSpun = new BehaviorSubject<string[]>([]);
+    private selectedPlayers: string[] = [];
+    private spinners: string[] = [];
 
     constructor() {
         this.supabase = createClient(
@@ -20,9 +21,11 @@ export class WheelService {
             environment.supabaseKey
         );
         this.loadPlayers();
+        this.loadGameState();
     }
 
     private async loadPlayers(): Promise<void> {
+      await this.loadGameState();
       const { data, error } = await this.supabase
           .from('players')
           .select('*')
@@ -31,9 +34,38 @@ export class WheelService {
       if (error) throw error;
 
       this.players.next(data.map(player => ({
-          name: player.name,
-          isSelected: false
+        name: player.name,
+        isSelected: this.selectedPlayers.includes(player.name),
+        hasSpun: this.spinners.includes(player.name)
       })));
+
+    }
+
+  private async loadGameState(): Promise<void> {
+
+    const { data, error } = await this.supabase
+        .from('draw_results')
+        .select('*')
+        .order('timestamp', { ascending: true });
+
+    if (error) throw error;
+
+    this.selectedPlayers = [...new Set(data.map(result => result.selected_player))];
+    this.spinners = [...new Set(data.map(result => result.player_who_spun))];
+
+    this.playersWhoSpun.next(this.spinners);
+
+    await this.updatePlayersState();
+  }
+
+  private async updatePlayersState(): Promise<void> {
+        const currentPlayers = this.players.value;
+        const updatedPlayers = currentPlayers.map(player => ({
+            ...player,
+            isSelected: this.selectedPlayers.includes(player.name),
+            hasSpun: this.spinners.includes(player.name)
+        }));
+        this.players.next(updatedPlayers);
     }
 
     private async loadPlayersWhoSpun(): Promise<void> {
@@ -79,61 +111,71 @@ export class WheelService {
             throw error;
         }
 
-        await this.loadPlayers(); // Recargar la lista de jugadores
+        await this.loadPlayers();
     }
 
-    async spinWheel(currentPlayerName: string): Promise<DrawResult> {
 
-        if (this.hasPlayerSpun(currentPlayerName)) {
-          throw new Error('Ya has girado la ruleta en este juego');
-        }
+  async spinWheel(currentPlayerName: string): Promise<DrawResult> {
+    await this.loadGameState();
 
-        const currentPlayers = this.players.value;
-        const availablePlayers = currentPlayers.filter(player =>
-            !this.hasPlayerSpun(player.name) &&
-            !player.isSelected // Verificar que no haya sido seleccionado antes
-        );
-
-        if (availablePlayers.length === 0) {
-            throw new Error('No hay jugadores disponibles');
-        }
-
-        const randomIndex = Math.floor(Math.random() * availablePlayers.length);
-        const selectedPlayer = availablePlayers[randomIndex];
-
-        // Marcar jugador como seleccionado en el estado local
-        const updatedPlayers = currentPlayers.map(player =>
-            player.name === selectedPlayer.name
-                ? { ...player, isSelected: true }
-                : player
-        );
-        this.players.next(updatedPlayers);
-
-        // Guardar resultado en Supabase
-        const drawResult = {
-            player_who_spun: currentPlayerName,
-            selected_player: selectedPlayer.name,
-            timestamp: new Date()
-        };
-
-        const { data, error } = await this.supabase
-            .from('draw_results')
-            .insert([drawResult])
-            .select()
-            .single();
-
-        if (error) throw error;
-
-         // Actualizar la lista de jugadores que han girado
-         const updatedPlayersWhoSpun = [...this.playersWhoSpun.value, currentPlayerName];
-         this.playersWhoSpun.next(updatedPlayersWhoSpun);
-
-        return {
-            playerWhoSpun: data.player_who_spun,
-            selectedPlayer: data.selected_player,
-            timestamp: new Date(data.timestamp)
-        };
+    if (this.spinners.includes(currentPlayerName)) {
+      throw new Error('Ya has girado la ruleta en este juego');
     }
+
+    const currentPlayers = this.players.value;
+
+    const availablePlayers = currentPlayers.filter(player =>
+        !this.selectedPlayers.includes(player.name) &&
+        player.name !== currentPlayerName
+    );
+
+    if (availablePlayers.length === 0) {
+        throw new Error('No hay jugadores disponibles para seleccionar');
+    }
+
+    if (this.playersWhoSpun.value.includes(currentPlayerName)) {
+        throw new Error('Ya has girado la ruleta en este juego');
+    }
+
+    const randomIndex = Math.floor(Math.random() * availablePlayers.length);
+    const selectedPlayer = availablePlayers[randomIndex];
+
+    const drawResult = {
+        player_who_spun: currentPlayerName,
+        selected_player: selectedPlayer.name,
+        timestamp: new Date()
+    };
+
+    const { data, error } = await this.supabase
+        .from('draw_results')
+        .insert([drawResult])
+        .select()
+        .single();
+
+    if (error) throw error;
+
+    this.selectedPlayers.push(selectedPlayer.name);
+    this.spinners.push(currentPlayerName);
+
+    this.playersWhoSpun.next(this.spinners);
+    await this.updatePlayersState();
+
+    const updatedPlayers = currentPlayers.map(player =>
+        player.name === selectedPlayer.name
+            ? { ...player, isSelected: true }
+            : player
+    );
+    this.players.next(updatedPlayers);
+
+    const updatedPlayersWhoSpun = [...this.playersWhoSpun.value, currentPlayerName];
+    this.playersWhoSpun.next(updatedPlayersWhoSpun);
+
+    return {
+        playerWhoSpun: data.player_who_spun,
+        selectedPlayer: data.selected_player,
+        timestamp: new Date(data.timestamp)
+    };
+  }
 
     async getResults(): Promise<DrawResult[]> {
         const { data, error } = await this.supabase
@@ -151,18 +193,20 @@ export class WheelService {
     }
 
     async resetGame(): Promise<void> {
-        // Actualizar todos los jugadores a no seleccionados
-        const { error } = await this.supabase
-            .from('players')
-            .update({ is_active: false })
-            .eq('is_active', true);
 
-        if (error) throw error;
+      const { error: deleteError } = await this.supabase
+          .from('draw_results')
+          .delete()
+          .neq('player_who_spun', ''); // Elimina todos los registros
 
-        this.players.next([]);
-    }
+      if (deleteError) throw deleteError;
 
-    // Método para calcular los ángulos de la ruleta
+      this.selectedPlayers = [];
+      this.spinners = [];
+      this.playersWhoSpun.next([]);
+      await this.updatePlayersState();
+  }
+
     calculateWheelSegments(players: Player[]): Array<{name: string, angle: number, color: string}> {
         const segmentAngle = 360 / players.length;
         const colors = this.generateColors(players.length);
@@ -175,7 +219,6 @@ export class WheelService {
     }
 
     private generateColors(count: number): string[] {
-        // Generar colores distintos para cada segmento
         return Array.from({ length: count }, (_, i) =>
             `hsl(${(i * 360) / count}, 70%, 50%)`
         );
